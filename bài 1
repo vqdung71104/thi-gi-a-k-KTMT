@@ -1,0 +1,69 @@
+#(1). Create a program to input a text line from the keyboard and test if it is a 
+#palindrome. For example: “abc121cba” is a palindrome. Store all palindromes which 
+#the user typed into the memory, to make sure that the user doesn’t duplicate 
+#palindromes.
+
+.data
+input:          .asciiz "Write your input: "
+palindrome:     .asciiz "Palindrome"
+not_palindrome: .asciiz "Not Palindrome"
+buffer:         .space 1000
+em:             .asciiz "Do not input an empty string anymore! \n"
+.text
+
+main:
+start:
+    li $v0, 4              # Load vào thanh ghi $v0 giá trị 4 - mã hệ thống để in ra một chuỗi
+    la $a0, input   
+    syscall  
+
+    li $v0, 8              # Load vào thanh ghi $v0 giá trị 8 - mã hệ thống để đọc một chuỗi
+    la $a0, buffer  
+    li $a1, 1000 
+    syscall
+    move $s0, $a0          # Chuyển địa chỉ của buffer sang $s0 cho tiện sử dụng
+    
+    addi $t8, $zero, 0     # $t8 = 0, được dùng làm biến đếm cho vòng lặp
+loop:                      # Vòng lặp tính chiều dài chuỗi input
+    add $t0, $s0, $t8      # Lấy địa chỉ kí tự đang xét trong chuỗi
+    lb $t1, 0($t0)         # Load giá trị của địa chỉ của kí tự đang xét sang $t1
+    beq $t1, 0, end_loop   # Nếu $t1 là null, chuyển đến end_loop
+    addi $t8, $t8, 1       # Thêm biến đếm 1 đơn vị
+    j loop                 # Quay lại chỗ loop, lặp lại vòng lặp
+end_loop:   
+    addi $t6, $zero, 1
+    bne $t8, $t6,check_input_length   # kiểm tra chuỗi rỗng
+    li $v0,4
+    la $a0,em
+    syscall
+    j start
+
+check_input_length:
+    subi $t8, $t8, 2       # Lấy chỉ số của kí tự cuối 
+    addi $t9, $zero, 0  
+    addi $t7, $zero, 1
+check:
+    add $t3, $s0, $t8     # Ở vòng lặp đầu là lấy kí tự cuối cùng của chuỗi
+    add $t4, $s0, $t9     # Ở vòng lặp đầu là lấy kí tự đầu tiên của chuỗi
+    lb $s1, 0($t3)        # Load kí tự ở $t3 và $t1
+    lb $s2, 0($t4)        # Load kí tự ở $t3 và $t1
+    bne $s1, $s2, not_pld  # Nếu hai kí tự không bằng nhau, chuyển đến not_pld
+    blt $t8, $t7, pld      # Nếu giá trị ở $t8 < 1 (chuỗi có 1 giá trị duy nhất) -> pld
+    blt $t8, $t9, pld      # Nếu giá trị ở $t8 < $t9 -> pld
+    addi $t8, $t8, -1     
+    addi $t9, $t9, 1
+    j check
+pld:
+    li $v0, 4  
+    la $a0, palindrome 
+    syscall
+    j exit
+    
+not_pld:
+    li $v0, 4  
+    la $a0, not_palindrome 
+    syscall
+    
+exit:
+    li $v0, 10
+    syscall
