@@ -6,16 +6,20 @@
 #For n = 239017, the output should be isLucky(n) = false.
 
 
+
 .data
 prompt:     .asciiz "Write your ticket number: "
 lucky:      .asciiz "Lucky"
 not_lucky:  .asciiz "Not Lucky"
 buffer:     .space 1000 
 error_msg:  .asciiz "Do not input empty string! \n"
-
+error_msg2:  .asciiz "Input a number with an even number of digits! \n"
 .text
-main:
 start:
+    li $v0, 4
+    la $a0, error_msg2
+    syscall
+main:
     # Print prompt
     li $v0, 4
     la $a0, prompt
@@ -42,8 +46,14 @@ end_loop:
     li $v0, 4
     la $a0, error_msg
     syscall
-    j start
+    j main
 not_empty:    
+    li $t3, 2			#t0 = 2 de kiem tra chan le cua strlen
+    div $t8, $t3         	#hi la phan du hi = 1 tuc la strlen chan, nguoc lai strlen le(do strlen luon +1 so voi do dai that)
+    mfhi $t1		
+    addi $t4,$zero,0
+    beq $t1, $t4, start
+    
     addi $t8, $t8, -1
     srl $t8, $t8, 1     #chia đôi giá trị ở $t8
     move $t9,$t8
