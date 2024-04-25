@@ -9,18 +9,25 @@
 
 .data
 prompt:     .asciiz "Write your ticket number: "
-lucky:      .asciiz "Lucky"
-not_lucky:  .asciiz "Not Lucky"
+lucky:      .asciiz "isLucky(n) = true"
+not_lucky:  .asciiz "isLucky(n) = false"
 buffer:     .space 1000 
-error_msg:  .asciiz "Do not input empty string! \n"
-error_msg2:  .asciiz "Input a number with an even number of digits! \n"
+error_msg:  .asciiz "Invalid! \n"
+
 .text
-start:
-    li $v0, 4
-    la $a0, error_msg2
-    syscall
 main:
-    # Print prompt
+#-----------------------------------------
+#@brief  In ra thông báo chuỗi có số chữ số là số lẻ
+#-----------------------------------------
+ odd:
+    li $v0, 4
+    la $a0, error_msg
+    syscall
+
+#-----------------------------------------
+#@brief  Nhan vao 1 xau tu nguoi dung
+#-----------------------------------------
+ getString:
     li $v0, 4
     la $a0, prompt
     syscall
@@ -30,42 +37,65 @@ main:
     la $a0, buffer
     li $a1, 1000
     syscall
-    
     move $s0, $a0 
     
-    addi $t8,$t8,0		#index i = 0
-    addi $t9,$zero,1
-loop:          #tính độ dài chuỗi           
-    add 	$t0, $s0, $t8     
-    lb 		$t1, 0($t0)        
-    beq 	$t1, $zero, end_loop  	
-    addi 	$t8, $t8, 1      
+#-----------------------------------------
+#@brief  Tinh do dai chuoi
+#@param[in]  $s0  Dia chi string can tìm do dai
+#@param[out] Tra ve ket qua rong hay khong
+#-----------------------------------------    
+getLength:
+    addi $t8,$t8,0		#Khoi tao strlen = 0
+    addi $t7,$zero,0           #lay gia tri 0 de so sanh
+ loop:             
+    add 	$t0, $s0, $t8      #$t0 = pointer = inputString +i
+    lb 		$t1, 0($t0)        #$t1 = inputString[i]
+    beq 	$t1, $zero, end_loop  	#if inputString[i] =='\0' -->end_loop
+    addi 	$t8, $t8, 1        #strlen++
     j loop                
-end_loop:   
-    bne $t8,$t9,not_empty
+ end_loop:   
+    addi $t8, $t8, -1          #lay gia tri that cua do dai chuoi
+    bne $t8,$t7,not_empty        #Neu khong phai chuoi rong-->not_empty
+#-----------------------------------------
+#@breif  In ra thong bao khong nhap chuoi rong nua, sau do quay lai getString
+#-----------------------------------------    
+empty:    
     li $v0, 4
     la $a0, error_msg
     syscall
-    j main
-not_empty:    
-    li $t3, 2			#t0 = 2 de kiem tra chan le cua strlen
-    div $t8, $t3         	#hi la phan du hi = 1 tuc la strlen chan, nguoc lai strlen le(do strlen luon +1 so voi do dai that)
-    mfhi $t1		
-    addi $t4,$zero,0
-    beq $t1, $t4, start
+    j getString
     
-    addi $t8, $t8, -1
-    srl $t8, $t8, 1     #chia đôi giá trị ở $t8
-    move $t9,$t8
-    addi $t2, $t2, 0
-    li $t5, 0 # tổng nửa đầu
-    li $t6, 0 # tổng nửa sau
-    addi $t7,$t7,0
+not_empty:    
+#-----------------------------------------
+#@brief Kiem tra so chu so la le hay chan
+#@param[in] $t8: Do dai cua string
+#param[out]  Ket qua la chan hay le
+#-----------------------------------------
+ even_check:
+    li $t3, 2			#$t3 = 2 de kiem tra chan le cua strlen
+    div $t8, $t3         	 #chia $t8 cho $t3
+    mfhi $t1		        #Phan du luu o $t1
+    addi $t4,$zero,0
+    bne $t1, $t4, odd       #neu phan du = 0 -->odd
+    
+    
+    
+
  
 
-          
-check_lucky:
-    beq $t2,$t8,check_result
+#-----------------------------------------
+#@brief  kiem tra xem tong nua dau va nua sau co bang nhau khong?
+#@param[in]  $t8 Nua do dai chuoi
+#@param[out]  ket qua is_Lucky=true or is_Lucky=false
+#-----------------------------------------
+sum:         
+    srl $t8, $t8, 1     #chia doi gia tri o $t8
+    move $t9,$t8        #copy gia tri o $t8 sang $t9, lay $t9 lam chi so dau tien nua sau
+    addi $t2, $t2, 0    #lay gia 0 lam chi so dau tien cua nua truoc
+    li $t5, 0           #tong nua dau
+    li $t6, 0           #tong nua sau
+ check_lucky:
+    beq $t2,$t8,check_result  #neu chi so cua nua truoc bang gia tri $t8 nghia la hoan thanh tinh tong-->check_result
     add $t3,$s0,$t9  #kí tự ở nửa đầu
     add $t4,$s0,$t2  #kí tự ở nửa cuối
     lb $s1,0($t3)  #load kí tự ở $t3  
@@ -74,24 +104,23 @@ check_lucky:
     add $t6,$t6,$s2 #cộng tổng kí tự nửa sau 
     addi $t9,$t9,1  #chuyển đến chỉ số của kí tự tiếp theo ở nửa đầu
     addi $t2,$t2,1  #chuyển đến chỉ số của kí tự tiếp theo ở nửa sau
-    j check_lucky
-        
-                                
-check_result:
-    beq $t5, $t6, print_lucky
+    j check_lucky   #quay lai tinh den het                                
+ check_result:   #so sanh 
+    beq $t5, $t6, print_lucky  #neu tong hia nua bang nhau-->print_lucky
     j print_not_lucky
-
-print_lucky:
+ print_lucky:    #in chuoi lucky
     la $a0, lucky
     li $v0, 4
     syscall
     j exit
-
-print_not_lucky:
+ print_not_lucky:  #in chuoi not_lucky
     la $a0, not_lucky
     li $v0, 4
     syscall
 
-exit:
+#-----------------------------------------
+#@breif  Ket thuc chuong trinh
+#-----------------------------------------        
+ exit:
     li $v0, 10
     syscall
